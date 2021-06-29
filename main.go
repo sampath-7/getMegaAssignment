@@ -71,10 +71,16 @@ func main() {
 	ch2 := ps.Subscribe("sub2")
 
 	listener := func(subscriptionID string, ch <-chan string) {
+		ret := false
 		for messageID := range ch {
-			ps.Ack(subscriptionID, messageID)
+			ret = ps.Ack(subscriptionID, messageID)
 		}
-		fmt.Printf("[%s] is sent all topic messages to its subscriptions :) \n", subscriptionID)
+		if !ret {
+			fmt.Println("Failed to receive acknowledgement from subscriptionID: ", subscriptionID)
+		} else {
+			fmt.Printf("[%s] is sent all topic messages to its subscriptions :) \n", subscriptionID)
+		}
+
 	}
 	go listener("sub1", ch1)
 	go listener("sub2", ch2)

@@ -6,7 +6,7 @@ import (
 )
 
 func (ps *PubSub) AddSubscription(topicID string, subscriptionID string) {
-
+	//Add subscription to the topicID if not exist in map
 	if _, isExist := ps.topicMapsSubs[topicID]; isExist {
 		subscriptionList := ps.topicMapsSubs[topicID]
 		subscriptionList = append(subscriptionList, subscriptionID)
@@ -18,6 +18,7 @@ func (ps *PubSub) AddSubscription(topicID string, subscriptionID string) {
 }
 
 func (ps *PubSub) DeleteSubscription(subscriptionID string) {
+	//Delete subscription to the topicID List and subscription Key from subscription map
 	if _, isExist := ps.subsMapsTopic[subscriptionID]; isExist {
 		for _, topicID := range ps.subsMapsTopic[subscriptionID] {
 			if subscriptionList, ok := ps.topicMapsSubs[topicID]; ok {
@@ -39,6 +40,7 @@ func (ps *PubSub) DeleteSubscription(subscriptionID string) {
 }
 
 func (ps *PubSub) Subscribe(subscriptionID string) chan string {
+	//create a channel to receive the topic messages
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 	ch := make(chan string, 1)
@@ -51,29 +53,18 @@ func (ps *PubSub) Subscribe(subscriptionID string) chan string {
 }
 
 func (ps *PubSub) SubscriberFunc(subscriptionID string, messageID string) {
+	//add message to the channel
 	w.Add(1)
 	ch := ps.subsMapsChannels[subscriptionID]
-	if !ps.IsaClosed(ch) {
-		ch <- messageID
-	} else {
-		if _, isExist := ps.messageQueue[messageID]; isExist {
-			var subscriptionList []string
-			subscriptionList = append(subscriptionList, messageID)
-			ps.messageQueue[messageID] = subscriptionList
-		} else {
-			subscriptionList := ps.messageQueue[messageID]
-			subscriptionList = append(subscriptionList, messageID)
-			ps.messageQueue[messageID] = subscriptionList
-		}
-	}
+	ch <- messageID
 }
 
 func (ps *PubSub) UnSubscribe(subscriptionID string) {
+	//closing the channel incase it is opened
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 	ch := ps.subsMapsChannels[subscriptionID]
 	if !ps.IsaClosed(ch) {
 		close(ch)
 	}
-	ps.DeleteSubscription(subscriptionID)
 }

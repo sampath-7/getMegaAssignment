@@ -5,7 +5,8 @@ import (
 )
 
 func (ps *PubSub) Publish(topicID string, message string) {
-	// fmt.Println("Publish Method Entered", topicID, ps.topicMapsSubs
+	//Publishing the message to respective subscription channels
+
 	ps.mu.Lock()
 	defer ps.mu.Unlock()
 	ps.messageCounter = ps.messageCounter + 1
