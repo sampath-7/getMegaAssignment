@@ -9,7 +9,7 @@ import (
 var w sync.WaitGroup
 
 type topicMapsSubsList map[string][]string
-type subsMapsTopicList map[string][]string
+type subsMapsTopicList map[string]string
 type messageQueue map[string][]string
 type messageIDMapsMessage map[string]string
 type subsMapsChannels map[string]chan string
@@ -47,8 +47,7 @@ func (ps *PubSub) IsaClosed(ch chan string) bool {
 	return false
 }
 
-func main() {
-	fmt.Println("PubSub Service Initiated")
+func PubSubFunc() *PubSub {
 	initTopicMapsSubs := make(topicMapsSubsList)
 	initSubsMapsTopic := make(subsMapsTopicList)
 	initSubsMapsChannels := make(subsMapsChannels)
@@ -64,33 +63,31 @@ func main() {
 		messageIDMapsMessage: initMessageIDMapsMessage,
 		messageCounter:       initMessageCounter,
 	}
+	return &ps
+}
+
+func main() {
+	fmt.Println("PubSub Service Initiated")
+	ps := PubSubFunc()
 	ps.CreateTopic("tech")
 	ps.AddSubscription("tech", "sub1")
 	ps.AddSubscription("tech", "sub2")
-	ch1 := ps.Subscribe("sub1")
-	ch2 := ps.Subscribe("sub2")
-
-	listener := func(subscriptionID string, ch <-chan string) {
-		ret := false
-		for messageID := range ch {
-			ret = ps.Ack(subscriptionID, messageID)
-		}
-		if !ret {
-			fmt.Println("Failed to receive acknowledgement from subscriptionID: ", subscriptionID)
-		} else {
-			fmt.Printf("[%s] is sent all topic messages to its subscriptions :) \n", subscriptionID)
-		}
-
+	ch1, ch1_status := ps.Subscribe("sub1")
+	ch2, ch2_status := ps.Subscribe("sub2")
+	if ch1_status {
+		go ps.Ack("sub1", ch1)
 	}
-	go listener("sub1", ch1)
-	go listener("sub2", ch2)
+	if ch2_status {
+		go ps.Ack("sub2", ch2)
+	}
 	ps.Publish("tech", "Tablets Main")
 	ps.Publish("tech", "robots")
 	ps.Publish("tech", "drones")
 	ps.Publish("tech", "tablets1")
 	ps.Publish("tech", "robots123")
 	ps.Publish("tech", "drones1244")
-	time.Sleep(1 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 	w.Wait()
 	ps.Close()
+
 }
